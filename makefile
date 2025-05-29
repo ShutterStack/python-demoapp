@@ -37,7 +37,7 @@ push:  ## 📤 Push container image to registry
 	docker push $(IMAGE_REG)/$(IMAGE_REPO):$(IMAGE_TAG)
 
 run: venv  ## 🏃 Run the server locally using Python & Flask
-	. $(SRC_DIR)/.venv/bin/activate \
+	call $(SRC_DIR)\.venv\Scripts\activate.bat \
 	&& python src/run.py
 
 deploy:  ## 🚀 Deploy to Azure Web App 
@@ -53,12 +53,10 @@ undeploy:  ## 💀 Remove from Azure
 	az group delete -n $(AZURE_RES_GROUP) -o table --no-wait
 
 test: venv  ## 🎯 Unit tests for Flask app
-	. $(SRC_DIR)/.venv/bin/activate \
-	&& pytest -v
+	call $(SRC_DIR)\.venv\Scripts\activate.bat && pytest -v
 
 test-report: venv  ## 🎯 Unit tests for Flask app (with report output)
-	. $(SRC_DIR)/.venv/bin/activate \
-	&& pytest -v --junitxml=test-results.xml
+	call $(SRC_DIR)\.venv\Scripts\activate.bat && pytest -v --junitxml=test-results.xml
 
 test-api: .EXPORT_ALL_VARIABLES  ## 🚦 Run integration API tests, server must be running 
 	cd tests \
@@ -66,20 +64,21 @@ test-api: .EXPORT_ALL_VARIABLES  ## 🚦 Run integration API tests, server must 
 	&& ./node_modules/.bin/newman run ./postman_collection.json --env-var apphost=$(TEST_HOST)
 
 clean:  ## 🧹 Clean up project
-	rm -rf $(SRC_DIR)/.venv
-	rm -rf tests/node_modules
-	rm -rf tests/package*
-	rm -rf test-results.xml
-	rm -rf $(SRC_DIR)/app/__pycache__
-	rm -rf $(SRC_DIR)/app/tests/__pycache__
-	rm -rf .pytest_cache
-	rm -rf $(SRC_DIR)/.pytest_cache
+	if exist "$(SRC_DIR)\.venv" rd /s /q "$(SRC_DIR)\.venv"
+	if exist "tests\node_modules" rd /s /q "tests\node_modules"
+	if exist "tests\package*" del /f /q "tests\package*"
+	if exist "test-results.xml" del /f /q "test-results.xml"
+	if exist "$(SRC_DIR)\app\__pycache__" rd /s /q "$(SRC_DIR)\app\__pycache__"
+	if exist "$(SRC_DIR)\app\tests\__pycache__" rd /s /q "$(SRC_DIR)\app\tests\__pycache__"
+	if exist ".pytest_cache" rd /s /q ".pytest_cache"
+	if exist "$(SRC_DIR)\.pytest_cache" rd /s /q "$(SRC_DIR)\.pytest_cache"
 
 # ============================================================================
 
 venv: $(SRC_DIR)/.venv/touchfile
 
 $(SRC_DIR)/.venv/touchfile: $(SRC_DIR)/requirements.txt
-	python3 -m venv $(SRC_DIR)/.venv
-	. $(SRC_DIR)/.venv/bin/activate; pip install -Ur $(SRC_DIR)/requirements.txt
-	touch $(SRC_DIR)/.venv/touchfile
+	python -m venv $(SRC_DIR)/.venv
+	call $(SRC_DIR)\.venv\Scripts\activate.bat && python -m pip install --upgrade pip
+	call $(SRC_DIR)\.venv\Scripts\activate.bat && pip install -Ur $(SRC_DIR)/requirements.txt
+	type nul > $(SRC_DIR)/.venv/touchfile
